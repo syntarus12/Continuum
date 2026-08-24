@@ -1,8 +1,8 @@
-# Syntarus Memory Engine — Community Edition
+# Continuum — Community Edition
 
 Run a production-style memory service locally, then connect it to the agent
-framework you already use. Community Edition is the self-hosted learning and
-development distribution of Syntarus Memory Engine: Qdrant for semantic
+framework you already use. Continuum is the self-hosted learning and
+development distribution of the Continuum memory engine: Qdrant for semantic
 recall, Neo4j for relationships, Redis for working state, and the Syntarus
 API/SDK at the boundary.
 
@@ -120,7 +120,7 @@ universal Python API. That keeps the examples honest as those projects evolve.
 
 ## Local data and reset
 
-Community Edition uses volume names prefixed with `syntarus_ce_`; it will not
+Continuum uses volume names prefixed with `continuum_ce_`; it will not
 reuse or delete the volumes from the main development or production compose
 files.
 
@@ -146,7 +146,7 @@ Included:
 - examples for common agent runtimes and an MCP configuration pattern;
 - isolated local volumes and a reset command for development.
 
-Community Edition is not the hosted Syntarus control plane. Hosted-only
+Continuum is not the hosted Syntarus control plane. Hosted-only
 features such as managed upgrades, multi-region failover, hosted billing,
 enterprise SSO, and a vendor-operated SLA are not implied by this repository.
 The benchmark numbers in this repository are reproducibility material, not a

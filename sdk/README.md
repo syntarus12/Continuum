@@ -1,6 +1,6 @@
-# Syntarus Python SDK
+# Continuum Python SDK
 
-The official Python client for the project-scoped Syntarus memory API.
+The official Python client for the project-scoped Continuum memory API.
 
 ## Install
 
@@ -131,7 +131,7 @@ The SDK raises typed exceptions derived from `SyntarusError`:
 - `APITimeoutError`
 - `EventFailedError` (`event` contains the terminal event record)
 
-## Syntarus resources
+## Continuum resources
 
 - [Syntarus website](https://www.syntarus.com)
 - [Developer portal](https://www.syntarus.com/pages/developers)

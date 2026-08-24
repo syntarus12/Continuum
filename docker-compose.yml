@@ -1,14 +1,14 @@
-name: syntarus-community
+name: continuum-community
 
 services:
   qdrant:
     image: qdrant/qdrant:v1.12.4
-    container_name: syntarus_ce_qdrant
+    container_name: continuum_ce_qdrant
     restart: unless-stopped
     ports:
       - "127.0.0.1:6333:6333"
     volumes:
-      - syntarus_ce_qdrant:/qdrant/storage
+      - continuum_ce_qdrant:/qdrant/storage
     ulimits:
       nofile:
         soft: 65536
@@ -21,7 +21,7 @@ services:
 
   neo4j:
     image: neo4j:5.26.0-community
-    container_name: syntarus_ce_neo4j
+    container_name: continuum_ce_neo4j
     restart: unless-stopped
     ports:
       - "127.0.0.1:7474:7474"
@@ -31,8 +31,8 @@ services:
       NEO4J_PLUGINS: '["apoc"]'
       NEO4J_dbms_memory_heap_max__size: 512m
     volumes:
-      - syntarus_ce_neo4j:/data
-      - syntarus_ce_neo4j_logs:/logs
+      - continuum_ce_neo4j:/data
+      - continuum_ce_neo4j_logs:/logs
     healthcheck:
       test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-community-change-me}", "RETURN 1"]
       interval: 15s
@@ -41,13 +41,13 @@ services:
 
   redis:
     image: redis:7.4-alpine
-    container_name: syntarus_ce_redis
+    container_name: continuum_ce_redis
     restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
     command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
     volumes:
-      - syntarus_ce_redis:/data
+      - continuum_ce_redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -56,7 +56,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: syntarus_ce_postgres
+    container_name: continuum_ce_postgres
     restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"
@@ -65,7 +65,7 @@ services:
       POSTGRES_PASSWORD: community-postgres
       POSTGRES_DB: memoryos_analytics
     volumes:
-      - syntarus_ce_postgres:/var/lib/postgresql/data
+      - continuum_ce_postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U memoryos -d memoryos_analytics"]
       interval: 10s
@@ -79,7 +79,7 @@ services:
       # included in this repository.
       context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-a76118fd8d8a67247e597f6f2ce4eeba55c0069e}:backend
       dockerfile: Dockerfile
-    container_name: syntarus_ce_backend
+    container_name: continuum_ce_backend
     restart: unless-stopped
     env_file:
       - ./.env
@@ -110,7 +110,7 @@ services:
     build:
       context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-a76118fd8d8a67247e597f6f2ce4eeba55c0069e}:frontend
       dockerfile: Dockerfile
-    container_name: syntarus_ce_frontend
+    container_name: continuum_ce_frontend
     restart: unless-stopped
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
@@ -121,8 +121,8 @@ services:
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 volumes:
-  syntarus_ce_qdrant:
-  syntarus_ce_neo4j:
-  syntarus_ce_neo4j_logs:
-  syntarus_ce_redis:
-  syntarus_ce_postgres:
+  continuum_ce_qdrant:
+  continuum_ce_neo4j:
+  continuum_ce_neo4j_logs:
+  continuum_ce_redis:
+  continuum_ce_postgres:

@@ -1,4 +1,4 @@
-# Minimal Community Edition example dependency.
+# Minimal Continuum example dependency.
 # Install the local SDK with: python -m pip install -e ./sdk
 # Frameworks are intentionally optional; install only what your agent uses.
 

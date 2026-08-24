@@ -7,7 +7,7 @@ import os
 from mcp.server.fastmcp import FastMCP
 from syntarus import AsyncMemoryClient
 
-mcp = FastMCP("Syntarus Memory")
+mcp = FastMCP("Continuum Memory")
 
 
 def _client() -> AsyncMemoryClient:

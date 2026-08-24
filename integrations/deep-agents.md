@@ -1,6 +1,6 @@
 # Deep Agents
 
-Treat Syntarus as the durable memory tool for a Deep Agents run:
+Treat Continuum as the durable memory tool for a Deep Agents run:
 
 1. Before planning, call `memories.search` with the user's request.
 2. Add only the returned bounded context to the planning prompt.
@@ -11,4 +11,3 @@ Treat Syntarus as the durable memory tool for a Deep Agents run:
 
 This preserves a clean user profile while still making long-running tasks
 resumable.
-

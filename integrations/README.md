@@ -1,6 +1,6 @@
 # Agent framework recipes
 
-These recipes all use the same Syntarus contract. They are intentionally
+These recipes all use the same Continuum contract. They are intentionally
 small so you can paste them into an existing agent instead of replacing your
 orchestration framework.
 
@@ -51,4 +51,3 @@ browser request.
 
 Search is read-only. Writes are durable and idempotent. Export and deletion
 should be exposed only behind your agent's confirmation/approval policy.
-
