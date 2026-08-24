@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "syntarus"
 version = "0.2.0"
-description = "Project-scoped memory client for Syntarus"
+description = "Project-scoped client for the Continuum memory API"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
