@@ -1,0 +1,128 @@
+name: syntarus-community
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: syntarus_ce_qdrant
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - syntarus_ce_qdrant:/qdrant/storage
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/6333' 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  neo4j:
+    image: neo4j:5.26.0-community
+    container_name: syntarus_ce_neo4j
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-community-change-me}
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_memory_heap_max__size: 512m
+    volumes:
+      - syntarus_ce_neo4j:/data
+      - syntarus_ce_neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-community-change-me}", "RETURN 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: syntarus_ce_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - syntarus_ce_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: syntarus_ce_postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: memoryos
+      POSTGRES_PASSWORD: community-postgres
+      POSTGRES_DB: memoryos_analytics
+    volumes:
+      - syntarus_ce_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memoryos -d memoryos_analytics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      # Pin the tested Community Edition engine source. Docker fetches only
+      # the backend subdirectory; no production data or benchmark files are
+      # included in this repository.
+      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-a76118fd8d8a67247e597f6f2ce4eeba55c0069e}:backend
+      dockerfile: Dockerfile
+    container_name: syntarus_ce_backend
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-community-change-me}
+      REDIS_URL: redis://redis:6379/0
+      ANALYTICS_DB_URL: postgresql://memoryos:community-postgres@postgres:5432/memoryos_analytics
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      MEMORYOS_ALLOW_OPEN: ${MEMORYOS_ALLOW_OPEN:-true}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      qdrant:
+        condition: service_started
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  frontend:
+    profiles: ["ui"]
+    build:
+      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-a76118fd8d8a67247e597f6f2ce4eeba55c0069e}:frontend
+      dockerfile: Dockerfile
+    container_name: syntarus_ce_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      - backend
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+volumes:
+  syntarus_ce_qdrant:
+  syntarus_ce_neo4j:
+  syntarus_ce_neo4j_logs:
+  syntarus_ce_redis:
+  syntarus_ce_postgres:

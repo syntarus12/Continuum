@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "syntarus"
+version = "0.2.0"
+description = "Project-scoped memory client for Syntarus"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Syntarus" }]
+dependencies = ["httpx>=0.27,<1"]
+keywords = ["ai", "agents", "memory", "llm"]
+classifiers = ["License :: OSI Approved :: MIT License", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12", "Programming Language :: Python :: 3.13"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9", "pytest-asyncio>=0.24,<1", "build>=1.2,<2", "twine>=5,<7"]
+
+[project.urls]
+Documentation = "https://www.syntarus.com/pages/developers"
+Homepage = "https://www.syntarus.com"
+"API Reference" = "https://www.syntarus.com/pages/api-reference"
+Security = "https://www.syntarus.com/pages/security"
+Source = "https://github.com/syntarus12/Continuum/tree/main/sdk"
+Issues = "https://github.com/syntarus12/Continuum/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/syntarus"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/syntarus",
+    "tests",
+    "examples",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+exclude = ["mcp/**", "memoryos_client.py", "**/__pycache__/**"]

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "syntarus-memory": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/syntarus12/Continuum.git#subdirectory=sdk/mcp",
+        "syntarus-mcp"
+      ],
+      "env": {
+        "SYNTARUS_API_KEY": "${SYNTARUS_API_KEY}",
+        "SYNTARUS_USER_ID": "${SYNTARUS_USER_ID}"
+      }
+    }
+  }
+}

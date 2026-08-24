@@ -1,0 +1,1 @@
+"""Syntarus MCP package."""
