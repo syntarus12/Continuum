@@ -1,5 +1,7 @@
 # Continuum — Community Edition
 
+![Continuum memory engine](assets/continuum-banner.png)
+
 Run a production-style memory service locally, then connect it to the agent
 framework you already use. Continuum is the self-hosted learning and
 development distribution of the Continuum memory engine: Qdrant for semantic
