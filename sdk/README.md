@@ -137,5 +137,5 @@ The SDK raises typed exceptions derived from `SyntarusError`:
 - [Developer portal](https://www.syntarus.com/pages/developers)
 - [API reference](https://www.syntarus.com/pages/api-reference)
 - [Security and reliability](https://www.syntarus.com/pages/security)
-- [Source code](https://github.com/sujalkherawat25-stack/memoryos/tree/main/sdk)
-- [Report an issue](https://github.com/sujalkherawat25-stack/memoryos/issues)
+- [Source code](https://github.com/syntarus12/Continuum/tree/main/sdk)
+- [Report an issue](https://github.com/syntarus12/Continuum/issues)

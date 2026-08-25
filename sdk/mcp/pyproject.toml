@@ -8,12 +8,12 @@ version = "0.1.0"
 description = "MCP server for Continuum memory"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Proprietary" }
+license = { text = "MIT" }
 # Until the public PyPI release, install the matching SDK directly from the
 # repository.  This makes `uvx --from git+…#subdirectory=sdk/mcp` usable today
 # instead of resolving a package name that has not been published yet.
 dependencies = [
-  "syntarus @ git+https://github.com/sujalkherawat25-stack/memoryos.git#subdirectory=sdk",
+  "syntarus @ git+https://github.com/syntarus12/Continuum.git#subdirectory=sdk",
   "mcp>=1.6,<2",
 ]
 
