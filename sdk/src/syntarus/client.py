@@ -19,7 +19,7 @@ from .exceptions import (
     SyntarusError,
 )
 
-DEFAULT_BASE_URL = "https://ai.syntarus.com/v1"
+DEFAULT_BASE_URL = "https://ai.syntarus.com/syntarus-api"
 
 
 def _raise_for_response(response: httpx.Response) -> None:

@@ -16,7 +16,7 @@ from syntarus import AsyncMemoryClient
 def _client() -> AsyncMemoryClient:
     return AsyncMemoryClient(
         api_key=os.environ["SYNTARUS_API_KEY"],
-        base_url=os.getenv("SYNTARUS_BASE_URL", "https://ai.syntarus.com/v1"),
+        base_url=os.getenv("SYNTARUS_BASE_URL", "https://ai.syntarus.com/syntarus-api"),
     )
 
 
@@ -55,4 +55,3 @@ async def remember(
         return await client.wait_for_event(accepted["event_id"])
     finally:
         await client.aclose()
-
