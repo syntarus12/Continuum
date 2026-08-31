@@ -46,6 +46,24 @@ docker compose --profile ui up -d --build
 
 Then open `http://localhost:5173`.
 
+## Continuum CLI
+
+Continuum includes a dedicated command-line workflow for developers, coding
+agents, and CI. Install the bundled SDK, then use the `continuum` command:
+
+```bash
+python -m pip install -e ./sdk
+
+continuum --base-url http://localhost:8000/v1 auth status
+continuum --base-url http://localhost:8000/v1 memory add "Customer prefers Hindi" --user customer_42 --wait
+continuum --base-url http://localhost:8000/v1 memory search "language preference" --user customer_42 --json
+continuum --base-url http://localhost:8000/v1 graph show --user customer_42
+```
+
+Set `CONTINUUM_API_KEY` (or pass `--api-key`) for a protected deployment. The
+CLI never writes API keys to disk. See the [SDK guide](sdk/README.md) for the
+full command reference.
+
 The local development key is `sk_mem_community`. It is accepted only because
 the example `.env` uses `MEMORYOS_ALLOW_OPEN=true`. Replace that setting and
 configure `MEMORYOS_API_KEYS` before exposing the service beyond your
