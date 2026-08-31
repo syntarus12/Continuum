@@ -77,7 +77,7 @@ services:
       # Pin the tested Community Edition engine source. Docker fetches only
       # the backend subdirectory; no production data or benchmark files are
       # included in this repository.
-      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-a76118fd8d8a67247e597f6f2ce4eeba55c0069e}:backend
+      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-b9c862e}:backend
       dockerfile: Dockerfile
     container_name: continuum_ce_backend
     restart: unless-stopped

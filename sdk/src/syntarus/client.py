@@ -48,7 +48,7 @@ class _BaseClient:
         if not api_key.startswith(("sk_mem_", "st_mem_")):
             raise ValueError("api_key must be a Syntarus project key or subject token")
         self._base_url = base_url.rstrip("/")
-        self._headers = {"Authorization": f"Bearer {api_key}", "User-Agent": "syntarus-python/0.2.0"}
+        self._headers = {"Authorization": f"Bearer {api_key}", "User-Agent": "continuum-python/0.3.0"}
         self._timeout = timeout
 
     @staticmethod
@@ -113,6 +113,11 @@ class MemoryClient(_BaseClient):
         params = {"user_id": user_id, **({"agent_id": agent_id} if agent_id else {})}
         response = self._request("GET", "/memories/export", params=params)
         return response.json()
+
+    def graph(self, *, user_id: str, agent_id: str | None = None) -> dict[str, Any]:
+        """Return the relationship graph for one user namespace."""
+        params = {"user_id": user_id, **({"agent_id": agent_id} if agent_id else {})}
+        return self._request("GET", "/graph", params=params).json()
 
     def delete(self, memory_id: str) -> None:
         self._request("DELETE", f"/memories/{memory_id}")
@@ -244,6 +249,11 @@ class AsyncMemoryClient(_BaseClient):
         params = {"user_id": user_id, **({"agent_id": agent_id} if agent_id else {})}
         response = await self._request("GET", "/memories/export", params=params)
         return response.json()
+
+    async def graph(self, *, user_id: str, agent_id: str | None = None) -> dict[str, Any]:
+        """Return the relationship graph for one user namespace."""
+        params = {"user_id": user_id, **({"agent_id": agent_id} if agent_id else {})}
+        return (await self._request("GET", "/graph", params=params)).json()
 
     async def delete(self, memory_id: str) -> None:
         await self._request("DELETE", f"/memories/{memory_id}")

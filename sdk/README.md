@@ -8,6 +8,25 @@ The official Python client for the project-scoped Continuum memory API.
 pip install syntarus
 ```
 
+## Continuum CLI
+
+The SDK installs a separate `continuum` command for developers, CI, and coding
+agents. It reads a key from `CONTINUUM_API_KEY` (or the compatible
+`SYNTARUS_API_KEY`) and never stores or prints it.
+
+```bash
+export CONTINUUM_API_KEY="sk_mem_..."
+
+continuum doctor
+continuum --base-url http://localhost:8000/v1 memory add "Customer prefers Hindi" --user customer_42 --wait
+continuum --base-url http://localhost:8000/v1 memory search "language preference" --user customer_42
+continuum --base-url http://localhost:8000/v1 graph show --user customer_42 --json
+```
+
+`continuum --json …` returns a stable `{ "ok", "data" }` envelope for
+automation. `continuum config set-endpoint` saves only the endpoint, never a
+secret. Run `continuum --help` for the complete command list.
+
 Python 3.10 or newer is required. Keep project API keys in a server-side
 secret manager; never ship them in browser or mobile applications.
 
