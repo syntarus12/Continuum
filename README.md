@@ -14,11 +14,12 @@ Qdrant, Neo4j, or Redis are wired together.
 
 ## See how Continuum works
 
-[![Watch the silent Continuum workflow explainer](assets/continuum-how-it-works-thumbnail.png)](assets/continuum-how-it-works.mp4)
+[![Watch the silent Continuum workflow explainer](assets/continuum-how-it-works.gif)](https://raw.githubusercontent.com/syntarus12/Continuum/main/assets/continuum-how-it-works.mp4)
 
 A short, silent walkthrough of the memory loop: capture a turn, extract
 durable facts, connect them in a graph, organize the memory views, and recall
-the exact context that changes an agent's answer.
+the exact context that changes an agent's answer. The preview plays inline;
+click it to download the full-resolution MP4.
 
 ## Start locally
 
