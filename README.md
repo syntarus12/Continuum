@@ -12,6 +12,14 @@ It is intentionally simple to start and easy to remove. Your data stays in
 the Docker volumes on your machine. The application never needs to know how
 Qdrant, Neo4j, or Redis are wired together.
 
+## See how Continuum works
+
+[![Watch the silent Continuum workflow explainer](assets/continuum-how-it-works-thumbnail.png)](assets/continuum-how-it-works.mp4)
+
+A short, silent walkthrough of the memory loop: capture a turn, extract
+durable facts, connect them in a graph, organize the memory views, and recall
+the exact context that changes an agent's answer.
+
 ## Start locally
 
 Requirements:
