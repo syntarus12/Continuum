@@ -1,0 +1,12 @@
+name: continuum-community
+
+# Monorepo-only override. The public Continuum checkout does not contain the
+# private engine source, so normal users use the published backend image from
+# docker-compose.yml. From C:\Users\sujal\memoryos\continuum_publish this
+# override points Docker at the sibling ../backend directory.
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    pull_policy: build

@@ -30,8 +30,10 @@ click it to download the full-resolution MP4.
 Requirements:
 
 - Docker Desktop with Compose v2
-- A provider key only when you want background extraction. The API, console,
-  health checks, and documentation start without one.
+- A provider key (`SARVAM_API_KEY` or `GEMINI_API_KEY`) for the first memory
+  loop. The API, console, health checks, and documentation still start without
+  one, but writes remain pending and eventually become `dead_letter` until an
+  extraction provider is configured.
 
 From a cloned checkout:
 
@@ -44,6 +46,10 @@ From a cloned checkout:
 The start helper creates `.env` if needed, launches the API and local console,
 waits for `/health` and `/ready`, and prints the final URLs. It does not expose
 Qdrant, Neo4j, Redis, or Postgres to the host.
+
+If you are working inside the Syntarus monorepo, the helper automatically uses
+the sibling `backend/` source. A normal public checkout uses the released
+backend image, so it does not need the private engine source.
 
 If you prefer Compose directly:
 
@@ -85,7 +91,8 @@ The console is intentionally small: it checks health, writes one memory, waits
 for the ingestion event, and searches it back. It also links to the hosted
 Syntarus developer console, API reference, and the 14-day design-partner pilot.
 
-For background extraction, copy a provider key into `.env` and restart:
+For the first write → ingest → search loop, copy one provider key into `.env`
+and restart:
 
 ```bash
 SARVAM_API_KEY=...
@@ -124,21 +131,42 @@ hosted Syntarus service is the recommended production path.
 
 ## Continuum CLI
 
-Continuum includes a dedicated command-line workflow for developers, coding
-agents, and CI. Install the bundled SDK, then use the `continuum` command:
+Continuum includes a small command-line workflow for developers, coding agents,
+and CI. The shortest local path is:
 
 ```bash
 python -m pip install -e ./sdk
 
-continuum --base-url http://localhost:8000/v1 auth status
-continuum --base-url http://localhost:8000/v1 memory add "Customer prefers Hindi" --user customer_42 --wait
-continuum --base-url http://localhost:8000/v1 memory search "language preference" --user customer_42 --json
-continuum --base-url http://localhost:8000/v1 graph show --user customer_42
+continuum init
+continuum doctor
+continuum memory add "Customer prefers Hindi" --wait
+continuum memory search "language preference"
 ```
 
-Set `CONTINUUM_API_KEY` (or pass `--api-key`) for a protected deployment. The
-CLI never writes API keys to disk. See the [SDK guide](sdk/README.md) for the
-full command reference.
+`continuum init` saves only the local endpoint and demo scope. It never stores
+an API key. For the local `.env.example` setup, the CLI safely uses
+`sk_mem_community` only when the endpoint is `localhost`; hosted or remote
+endpoints always require `CONTINUUM_API_KEY` (or `--api-key`).
+
+Useful shortcuts:
+
+```bash
+# Read memory text from a pipe.
+echo "The deploy window is Tuesday morning." | continuum memory add --wait
+
+# Use a separate namespace without changing config.
+continuum memory search "deploy window" --user project_42 --agent release-bot
+
+# Give an agent/CI job stable JSON instead of human output.
+continuum --json memory search "language preference"
+
+# Inspect or change the non-secret endpoint settings.
+continuum config show
+continuum config set-endpoint https://ai.syntarus.com/syntarus-api
+```
+
+The CLI never writes API keys to disk. See the [SDK guide](sdk/README.md) for
+the full command reference.
 
 The local development key is `sk_mem_community`. It is accepted only because
 the example `.env` uses `MEMORYOS_ALLOW_OPEN=true`. Replace that setting and

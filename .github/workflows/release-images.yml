@@ -8,7 +8,7 @@ on:
       engine_ref:
         description: "Reviewed MemoryOS commit or tag used for the backend image"
         required: true
-        default: "1844752"
+        default: "748e515"
 
 permissions:
   contents: read
@@ -18,7 +18,7 @@ jobs:
   images:
     runs-on: ubuntu-latest
     env:
-      ENGINE_REF: ${{ inputs.engine_ref || '1844752' }}
+      ENGINE_REF: ${{ inputs.engine_ref || '748e515' }}
       REGISTRY: ghcr.io
       OWNER: syntarus12
     steps:

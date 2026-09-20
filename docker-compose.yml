@@ -73,11 +73,8 @@ services:
 
   backend:
     image: ${SYNTARUS_BACKEND_IMAGE:-ghcr.io/syntarus12/continuum-backend:latest}
-    build:
-      # Releases use the published image. A source build keeps contributors
-      # able to test an engine revision before an image is published.
-      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-1844752}:backend
-      dockerfile: Dockerfile
+    # The public checkout runs the published image. Contributors working from
+    # the MemoryOS monorepo can add docker-compose.source.yml to build locally.
     pull_policy: missing
     container_name: continuum_ce_backend
     restart: unless-stopped
@@ -94,12 +91,18 @@ services:
       MEMORYOS_ALLOW_OPEN: ${MEMORYOS_ALLOW_OPEN:-true}
       MEMORYOS_API_KEYS: ${MEMORYOS_API_KEYS:-sk_mem_community:user_demo}
       MEMORYOS_SSE_SECRET: ${MEMORYOS_SSE_SECRET:-community-only-change-me}
+      SESSION_SECRET: ${SESSION_SECRET:-community-session-secret-change-me}
+      COMMUNITY_MODE: ${COMMUNITY_MODE:-true}
+      COMMUNITY_API_KEY: ${COMMUNITY_API_KEY:-sk_mem_community}
+      COMMUNITY_ACCOUNT_ID: ${COMMUNITY_ACCOUNT_ID:-community_local}
       SARVAM_API_KEY: ${SARVAM_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       SERPER_API_KEY: ${SERPER_API_KEY:-}
       EXA_API_KEY: ${EXA_API_KEY:-}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
+    volumes:
+      - continuum_ce_fastembed_cache:/tmp/fastembed_cache
     depends_on:
       qdrant:
         condition: service_healthy
@@ -138,3 +141,4 @@ volumes:
   continuum_ce_neo4j_logs:
   continuum_ce_redis:
   continuum_ce_postgres:
+  continuum_ce_fastembed_cache:

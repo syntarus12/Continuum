@@ -12,20 +12,24 @@ pip install syntarus
 
 The SDK installs a separate `continuum` command for developers, CI, and coding
 agents. It reads a key from `CONTINUUM_API_KEY` (or the compatible
-`SYNTARUS_API_KEY`) and never stores or prints it.
+`SYNTARUS_API_KEY`) and never stores or prints it. For the local Community
+Edition, `continuum init` configures the endpoint and the CLI uses the local
+development key only for `localhost`.
 
 ```bash
 export CONTINUUM_API_KEY="sk_mem_..."
 
+continuum init
 continuum doctor
-continuum --base-url http://localhost:8000/v1 memory add "Customer prefers Hindi" --user customer_42 --wait
-continuum --base-url http://localhost:8000/v1 memory search "language preference" --user customer_42
-continuum --base-url http://localhost:8000/v1 graph show --user customer_42 --json
+continuum memory add "Customer prefers Hindi" --wait
+continuum memory search "language preference"
+continuum graph show --json
 ```
 
 `continuum --json …` returns a stable `{ "ok", "data" }` envelope for
 automation. `continuum config set-endpoint` saves only the endpoint, never a
-secret. Run `continuum --help` for the complete command list.
+secret. Memory text can also be piped to `continuum memory add --wait`. Run
+`continuum --help` for the complete command list.
 
 Python 3.10 or newer is required. Keep project API keys in a server-side
 secret manager; never ship them in browser or mobile applications.

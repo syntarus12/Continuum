@@ -73,8 +73,16 @@ $('run').onclick = async () => {
     const add = await fetch(`${base()}/v1/memories`, {method:'POST', headers: headers(), body: JSON.stringify(body)});
     const accepted = await add.json(); if (!add.ok) throw new Error(JSON.stringify(accepted));
     result.textContent = `Accepted ${accepted.event_id}. Waiting for ingestion…`;
-    const event = await fetch(`${base()}/v1/events/${encodeURIComponent(accepted.event_id)}`, {headers: headers()});
-    const eventBody = await event.json();
+    let eventBody;
+    for (let attempt = 0; attempt < 90; attempt++) {
+      const event = await fetch(`${base()}/v1/events/${encodeURIComponent(accepted.event_id)}`, {headers: headers()});
+      eventBody = await event.json();
+      if (['succeeded', 'dead_letter', 'cancelled'].includes(eventBody.status)) break;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    if (!eventBody || eventBody.status !== 'succeeded') {
+      throw new Error(`Ingestion ${eventBody?.status || 'timed out'}: ${eventBody?.last_error || 'check the backend logs and provider key'}`);
+    }
     const searchBody = {query: $('query').value, user_id: user, top_k: 5}; if (agent) searchBody.agent_id = agent;
     const search = await fetch(`${base()}/v1/memories/search`, {method:'POST', headers: headers(), body: JSON.stringify(searchBody)});
     const found = await search.json(); if (!search.ok) throw new Error(JSON.stringify(found));

@@ -2,8 +2,10 @@ services:
   backend:
     environment:
       MEMORYOS_ALLOW_OPEN: "false"
+      COMMUNITY_MODE: "false"
       MEMORYOS_API_KEYS: ${MEMORYOS_API_KEYS:?Set a strong MEMORYOS_API_KEYS value in .env}
       MEMORYOS_SSE_SECRET: ${MEMORYOS_SSE_SECRET:?Set a strong MEMORYOS_SSE_SECRET value in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?Set a strong SESSION_SECRET value in .env}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:?Set a strong NEO4J_PASSWORD value in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong POSTGRES_PASSWORD value in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to your public console origin}
