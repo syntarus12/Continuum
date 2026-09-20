@@ -35,10 +35,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check out reviewed MemoryOS engine
+        uses: actions/checkout@v4
+        with:
+          repository: sujalkherawat25-stack/memoryos
+          ref: ${{ env.ENGINE_REF }}
+          token: ${{ secrets.MEMORYOS_REPO_TOKEN }}
+          path: .engine
+
       - name: Publish backend image
         uses: docker/build-push-action@v6
         with:
-          context: https://github.com/sujalkherawat25-stack/memoryos.git#${{ env.ENGINE_REF }}:backend
+          context: ./.engine/backend
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true

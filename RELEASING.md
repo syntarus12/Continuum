@@ -1,6 +1,10 @@
 # Community Edition release checklist
 
-1. Review the engine commit in SYNTARUS_ENGINE_REF.
+1. Review the `ENGINE_REF` default in `.github/workflows/release-images.yml`.
+   The `Publish Community Edition images` workflow checks out the private
+   MemoryOS repository with a `MEMORYOS_REPO_TOKEN` Actions secret. Add a
+   fine-grained read-only token with **Contents: read** to the Continuum
+   repository before publishing images; never put it in `.env` or source.
 2. Run the local checks:
 
        docker compose config --quiet
