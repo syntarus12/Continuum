@@ -1,12 +1,15 @@
 name: continuum-community
 
+# Safe by default: only the API and local console are published to loopback.
+# Databases stay on the private Compose network unless the debug override is
+# explicitly selected. The backend image is published for releases and keeps
+# a remote source build as a development fallback.
+
 services:
   qdrant:
     image: qdrant/qdrant:v1.12.4
     container_name: continuum_ce_qdrant
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:6333:6333"
     volumes:
       - continuum_ce_qdrant:/qdrant/storage
     ulimits:
@@ -18,14 +21,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+      start_period: 10s
 
   neo4j:
     image: neo4j:5.26.0-community
     container_name: continuum_ce_neo4j
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:7474:7474"
-      - "127.0.0.1:7687:7687"
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-community-change-me}
       NEO4J_PLUGINS: '["apoc"]'
@@ -37,14 +38,13 @@ services:
       test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-community-change-me}", "RETURN 1"]
       interval: 15s
       timeout: 10s
-      retries: 10
+      retries: 15
+      start_period: 30s
 
   redis:
     image: redis:7.4-alpine
     container_name: continuum_ce_redis
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
     command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
     volumes:
       - continuum_ce_redis:/data
@@ -58,11 +58,9 @@ services:
     image: postgres:16-alpine
     container_name: continuum_ce_postgres
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: memoryos
-      POSTGRES_PASSWORD: community-postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-community-postgres}
       POSTGRES_DB: memoryos_analytics
     volumes:
       - continuum_ce_postgres:/var/lib/postgresql/data
@@ -70,55 +68,69 @@ services:
       test: ["CMD-SHELL", "pg_isready -U memoryos -d memoryos_analytics"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
   backend:
+    image: ${SYNTARUS_BACKEND_IMAGE:-ghcr.io/syntarus12/continuum-backend:latest}
     build:
-      # Pin the tested Community Edition engine source. Docker fetches only
-      # the backend subdirectory; no production data or benchmark files are
-      # included in this repository.
-      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-b9c862e}:backend
+      # Releases use the published image. A source build keeps contributors
+      # able to test an engine revision before an image is published.
+      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-1844752}:backend
       dockerfile: Dockerfile
+    pull_policy: missing
     container_name: continuum_ce_backend
     restart: unless-stopped
-    env_file:
-      - ./.env
     environment:
       QDRANT_URL: http://qdrant:6333
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USER: neo4j
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-community-change-me}
       REDIS_URL: redis://redis:6379/0
-      ANALYTICS_DB_URL: postgresql://memoryos:community-postgres@postgres:5432/memoryos_analytics
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      ANALYTICS_DB_URL: postgresql://memoryos:${POSTGRES_PASSWORD:-community-postgres}@postgres:5432/memoryos_analytics
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173}
+      APP_BASE_URL: ${APP_BASE_URL:-http://127.0.0.1:5173}
+      DEFAULT_TIMEZONE: ${DEFAULT_TIMEZONE:-UTC}
       MEMORYOS_ALLOW_OPEN: ${MEMORYOS_ALLOW_OPEN:-true}
+      MEMORYOS_API_KEYS: ${MEMORYOS_API_KEYS:-sk_mem_community:user_demo}
+      MEMORYOS_SSE_SECRET: ${MEMORYOS_SSE_SECRET:-community-only-change-me}
+      SARVAM_API_KEY: ${SARVAM_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      EXA_API_KEY: ${EXA_API_KEY:-}
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
       qdrant:
-        condition: service_started
+        condition: service_healthy
       neo4j:
         condition: service_healthy
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-  frontend:
+  console:
     profiles: ["ui"]
+    image: ${SYNTARUS_CONSOLE_IMAGE:-ghcr.io/syntarus12/continuum-console:latest}
     build:
-      context: https://github.com/sujalkherawat25-stack/memoryos.git#${SYNTARUS_ENGINE_REF:-a76118fd8d8a67247e597f6f2ce4eeba55c0069e}:frontend
+      context: ./console
       dockerfile: Dockerfile
-    container_name: continuum_ce_frontend
+    pull_policy: missing
+    container_name: continuum_ce_console
     restart: unless-stopped
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
     ports:
-      - "127.0.0.1:5173:5173"
+      - "127.0.0.1:${CONSOLE_PORT:-5173}:80"
     depends_on:
-      - backend
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+      backend:
+        condition: service_healthy
 
 volumes:
   continuum_ce_qdrant:

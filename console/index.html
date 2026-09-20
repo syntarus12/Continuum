@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Continuum Community Edition</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    body { margin: 0; background: #08110e; color: #f3f8f4; }
+    main { max-width: 920px; margin: 0 auto; padding: 48px 22px 72px; }
+    .eyebrow { color: #81e6b5; letter-spacing: .13em; text-transform: uppercase; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 6vw, 64px); line-height: .98; max-width: 700px; margin: 14px 0 18px; }
+    p { color: #abc4b7; line-height: 1.6; max-width: 680px; }
+    .card { background: #101d18; border: 1px solid #29483a; border-radius: 16px; padding: 22px; margin-top: 28px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    label { display: block; color: #a9c9b9; font-size: 13px; margin-bottom: 7px; }
+    input, textarea { box-sizing: border-box; width: 100%; color: #f3f8f4; background: #08110e; border: 1px solid #335846; border-radius: 9px; padding: 11px 12px; font: inherit; }
+    textarea { min-height: 92px; resize: vertical; }
+    button, a.button { display: inline-block; border: 0; border-radius: 9px; padding: 11px 15px; background: #81e6b5; color: #07110c; font-weight: 750; cursor: pointer; text-decoration: none; }
+    button.secondary, a.secondary { background: transparent; color: #bcebd0; border: 1px solid #3c765a; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #07100d; border-radius: 10px; padding: 14px; color: #c9efda; min-height: 42px; }
+    .ok { color: #81e6b5; } .error { color: #ff9f91; }
+    small { color: #7e9b8a; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Continuum Community Edition</div>
+  <h1>Your agent can remember in five minutes.</h1>
+  <p>Run the local memory engine, write one durable fact, wait for ingestion, and retrieve it with evidence. Your data stays in Docker volumes on this machine.</p>
+
+  <section class="card">
+    <h2>Connect to your local API</h2>
+    <div class="grid">
+      <div><label for="api">API base URL</label><input id="api" value="http://localhost:8000"></div>
+      <div><label for="key">API key</label><input id="key" type="password" value="sk_mem_community"></div>
+    </div>
+    <div class="actions"><button id="health">Check health</button><a class="button secondary" href="https://www.syntarus.com/pages/developers" target="_blank" rel="noreferrer">Try hosted Syntarus</a><a class="button secondary" href="https://www.syntarus.com/pages/enterprise" target="_blank" rel="noreferrer">14-day design-partner pilot</a></div>
+    <pre id="status">Ready. Start the memory loop below.</pre>
+  </section>
+
+  <section class="card">
+    <h2>Run the first memory loop</h2>
+    <div class="grid">
+      <div><label for="user">User ID</label><input id="user" value="demo-user"></div>
+      <div><label for="agent">Agent ID (optional)</label><input id="agent" value="demo-agent"></div>
+    </div>
+    <div style="margin-top:14px"><label for="memory">Memory to write</label><textarea id="memory">I prefer concise status updates and quiet mornings.</textarea></div>
+    <div style="margin-top:14px"><label for="query">Question to retrieve</label><input id="query" value="How should I receive status updates?"></div>
+    <div class="actions"><button id="run">Write, wait, and retrieve</button><a class="button secondary" href="https://www.syntarus.com/pages/api-reference" target="_blank" rel="noreferrer">Read API docs</a></div>
+    <pre id="result">No request yet.</pre>
+    <small>For production, keep keys server-side. This console is a local development helper.</small>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const base = () => $('api').value.replace(/\/$/, '');
+const headers = () => ({'Authorization': `Bearer ${$('key').value}`, 'Content-Type': 'application/json'});
+const show = (node, value, ok) => { node.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2); node.className = ok ? 'ok' : 'error'; };
+
+$('health').onclick = async () => {
+  try { const r = await fetch(`${base()}/health`); show($('status'), await r.json(), r.ok); }
+  catch (e) { show($('status'), `Could not reach ${base()}: ${e.message}`, false); }
+};
+
+$('run').onclick = async () => {
+  const user = $('user').value.trim(), agent = $('agent').value.trim() || undefined;
+  const result = $('result'); result.className = ''; result.textContent = 'Writing memory…';
+  try {
+    const body = {user_id: user, messages: [{role: 'user', content: $('memory').value}], idempotency_key: `console-${Date.now()}`};
+    if (agent) body.agent_id = agent;
+    const add = await fetch(`${base()}/v1/memories`, {method:'POST', headers: headers(), body: JSON.stringify(body)});
+    const accepted = await add.json(); if (!add.ok) throw new Error(JSON.stringify(accepted));
+    result.textContent = `Accepted ${accepted.event_id}. Waiting for ingestion…`;
+    const event = await fetch(`${base()}/v1/events/${encodeURIComponent(accepted.event_id)}`, {headers: headers()});
+    const eventBody = await event.json();
+    const searchBody = {query: $('query').value, user_id: user, top_k: 5}; if (agent) searchBody.agent_id = agent;
+    const search = await fetch(`${base()}/v1/memories/search`, {method:'POST', headers: headers(), body: JSON.stringify(searchBody)});
+    const found = await search.json(); if (!search.ok) throw new Error(JSON.stringify(found));
+    show(result, {accepted, ingestion: eventBody, retrieved: found}, true);
+  } catch (e) { show(result, `Memory loop failed: ${e.message}`, false); }
+};
+</script>
+</body>
+</html>

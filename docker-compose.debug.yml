@@ -1,0 +1,16 @@
+services:
+  # Optional host access for inspecting local databases. Never use this file
+  # on an internet-facing machine.
+  qdrant:
+    ports:
+      - "127.0.0.1:6333:6333"
+  neo4j:
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"

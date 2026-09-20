@@ -1,0 +1,58 @@
+name: Publish Community Edition images
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      engine_ref:
+        description: "Reviewed MemoryOS commit or tag used for the backend image"
+        required: true
+        default: "1844752"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    env:
+      ENGINE_REF: ${{ inputs.engine_ref || '1844752' }}
+      REGISTRY: ghcr.io
+      OWNER: syntarus12
+    steps:
+      - name: Check out Community Edition
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: https://github.com/sujalkherawat25-stack/memoryos.git#${{ env.ENGINE_REF }}:backend
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/continuum-backend:${{ github.ref_name }}
+            ghcr.io/${{ env.OWNER }}/continuum-backend:latest
+
+      - name: Publish local console image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./console
+          file: ./console/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/continuum-console:${{ github.ref_name }}
+            ghcr.io/${{ env.OWNER }}/continuum-console:latest
