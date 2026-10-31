@@ -2,191 +2,89 @@
 
 ![Continuum memory engine](assets/continuum-banner.png)
 
-Run a production-style memory service locally, then connect it to the agent
-framework you already use. Continuum is the self-hosted learning and
-development distribution of the Continuum memory engine: Qdrant for semantic
-recall, Neo4j for relationships, Redis for working state, and the Syntarus
-API/SDK at the boundary.
+Continuum is a local, self-hosted memory and continuity layer for AI agents. It combines semantic recall in **Qdrant**, entity relationships in **Neo4j**, working state in **Redis**, and operational state in **Postgres**, behind the same API and Python SDK boundary used by Syntarus.
 
-It is intentionally simple to start and easy to remove. Your data stays in
-the Docker volumes on your machine. The application never needs to know how
-Qdrant, Neo4j, Redis, or Postgres are wired together.
+Community Edition is for local development and proofs of concept. It is not the hosted Syntarus control plane and does not imply managed upgrades, multi-region failover, enterprise SSO, billing, or a vendor-operated SLA.
 
-Community Edition is a local development distribution, not the hosted
-Syntarus control plane. It gives you the same API boundary and a safe place to
-prototype before moving a proven workflow to managed Syntarus.
+## Why Continuum
 
-## See how Continuum works
+Most agents do not need another chat history. They need the current, relevant, scoped state required to continue work correctly:
+
+- **Correct continuation:** retrieve focused context instead of replaying every transcript.
+- **Durable ingestion:** a successful write returns an event; extraction and indexing finish asynchronously.
+- **Scoped namespaces:** keep users, projects, and agents isolated.
+- **Inspectable behavior:** health checks, local doctor commands, API events, and local stores make the loop observable.
+- **Portable boundary:** the Python SDK and MCP server work across agent frameworks without coupling them to the underlying databases.
+
+## Watch the workflow
 
 [![Watch the silent Continuum workflow explainer](assets/continuum-how-it-works.gif)](https://raw.githubusercontent.com/syntarus12/Continuum/main/assets/continuum-how-it-works.mp4)
 
-A short, silent walkthrough of the memory loop: capture a turn, extract
-durable facts, connect them in a graph, organize the memory views, and recall
-the exact context that changes an agent's answer. The preview plays inline;
-click it to download the full-resolution MP4.
+The walkthrough shows the core loop: capture a turn, extract durable facts, connect them in the graph, organize memory views, and recall the context that changes the next answer.
 
-## Start locally in one command
+## Quick start
 
 Requirements:
 
 - Docker Desktop with Compose v2
-- A provider key (`SARVAM_API_KEY` or `GEMINI_API_KEY`) for the first memory
-  loop. The API, console, health checks, and documentation still start without
-  one, but writes remain pending and eventually become `dead_letter` until an
-  extraction provider is configured.
-
-From a cloned checkout:
+- Python 3.10+ for the SDK and CLI
+- `SARVAM_API_KEY` or `GEMINI_API_KEY` for memory extraction
 
 ```bash
-./scripts/start.sh               # macOS/Linux
-# Windows PowerShell:
+git clone https://github.com/syntarus12/Continuum.git
+cd Continuum
+./scripts/start.sh
+```
+
+On Windows PowerShell:
+
+```powershell
+git clone https://github.com/syntarus12/Continuum.git
+cd Continuum
 .\scripts\start.ps1
 ```
 
-The start helper creates `.env` if needed, launches the API and local console,
-waits for `/health` and `/ready`, and prints the final URLs. It does not expose
-Qdrant, Neo4j, Redis, or Postgres to the host.
+The helper creates `.env`, starts the API and console, waits for `/health` and `/ready`, and prints the local URLs. Database ports are not published to the host.
 
-If you are working inside the Syntarus monorepo, the helper automatically uses
-the sibling `backend/` source. A normal public checkout uses the released
-backend image, so it does not need the private engine source.
+| Service | URL |
+| --- | --- |
+| Console | `http://127.0.0.1:5173` |
+| API | `http://127.0.0.1:8000` |
+| OpenAPI | `http://127.0.0.1:8000/docs` |
 
-If you prefer Compose directly:
+You can also start Compose directly:
 
 ```bash
 docker compose --profile ui up -d --pull missing
 ```
 
-Open the local console at `http://127.0.0.1:5173`. The API is at
-`http://127.0.0.1:8000` and OpenAPI is at `http://127.0.0.1:8000/docs`.
-
-To stop without deleting data:
+Stop while keeping data:
 
 ```bash
 ./scripts/stop.sh
 ```
 
-To run the environment checks at any time:
+Check the local environment:
 
 ```bash
 ./scripts/doctor.sh
 ```
 
-On Windows, use `scripts\stop.ps1` and `scripts\doctor.ps1`.
-
-## Zero-to-local install
-
-On macOS/Linux, a fresh checkout and start can be done with:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/syntarus12/Continuum/main/scripts/install.sh | bash
-```
-
-The installer clones into `./continuum`, creates local-only defaults, and
-starts the stack. Review the script before using it in a sensitive environment.
-
-## Local console
-
-The console is intentionally small: it checks health, writes one memory, waits
-for the ingestion event, and searches it back. It also links to the hosted
-Syntarus developer console, API reference, and the 14-day design-partner pilot.
-
-For the first write → ingest → search loop, copy one provider key into `.env`
-and restart:
-
-```bash
-SARVAM_API_KEY=...
-# or
-GEMINI_API_KEY=...
-```
-
-The local API key is `sk_mem_community` by default and is valid only on the
-loopback development path. Never reuse it on a shared or internet-facing host.
-
-## Optional database inspection
-
-Database ports are private by default. If you need to inspect them locally,
-use the explicit debug override:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
-```
-
-This publishes the database ports to `127.0.0.1` only. Do not use the debug
-override on a public host.
-
-## Public deployment (advanced)
-
-Do not expose the default Compose file directly to the internet. For a
-customer-controlled deployment, set strong secrets and a DNS name in `.env`,
-then use the Caddy override:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.public.yml --profile public up -d --pull missing
-```
-
-The public override disables open development auth, keeps databases private,
-and terminates HTTPS through Caddy. It is an advanced deployment path; the
-hosted Syntarus service is the recommended production path.
-
-## Continuum CLI
-
-Continuum includes a small command-line workflow for developers, coding agents,
-and CI. The shortest local path is:
-
-```bash
-python -m pip install -e ./sdk
-
-continuum init
-continuum doctor
-continuum memory add "Customer prefers Hindi" --wait
-continuum memory search "language preference"
-```
-
-`continuum init` saves only the local endpoint and demo scope. It never stores
-an API key. For the local `.env.example` setup, the CLI safely uses
-`sk_mem_community` only when the endpoint is `localhost`; hosted or remote
-endpoints always require `CONTINUUM_API_KEY` (or `--api-key`).
-
-Useful shortcuts:
-
-```bash
-# Read memory text from a pipe.
-echo "The deploy window is Tuesday morning." | continuum memory add --wait
-
-# Use a separate namespace without changing config.
-continuum memory search "deploy window" --user project_42 --agent release-bot
-
-# Give an agent/CI job stable JSON instead of human output.
-continuum --json memory search "language preference"
-
-# Inspect or change the non-secret endpoint settings.
-continuum config show
-continuum config set-endpoint https://ai.syntarus.com/syntarus-api
-```
-
-The CLI never writes API keys to disk. See the [SDK guide](sdk/README.md) for
-the full command reference.
-
-The local development key is `sk_mem_community`. It is accepted only because
-the example `.env` uses `MEMORYOS_ALLOW_OPEN=true`. Replace that setting and
-configure `MEMORYOS_API_KEYS` before exposing the service beyond your
-machine.
-
 ## First memory in five minutes
 
-Install the SDK from this checkout and run the example:
+Install the SDK:
 
 ```bash
-python -m venv .venv
 python -m pip install -e ./sdk
-set SYNTARUS_API_KEY=sk_mem_community       # Windows PowerShell: $env:...
+```
+
+Run the example:
+
+```bash
 python examples/python/quickstart.py
 ```
 
-The example writes one turn, waits for the durable ingestion event, and then
-searches it back. `wait_for_event` is important: a successful HTTP write means
-the event was accepted, not that extraction has finished.
+Or use the minimal API pattern:
 
 ```python
 from syntarus import MemoryClient
@@ -198,102 +96,176 @@ with MemoryClient(api_key="sk_mem_community", base_url="http://localhost:8000/v1
         messages=[{"role": "user", "content": "I prefer short status updates."}],
     )
     memory.wait_for_event(accepted["event_id"])
-    print(memory.search("How should I receive updates?", user_id="demo-user")["context"])
+    result = memory.search(
+        "How should I receive updates?",
+        user_id="demo-user",
+        agent_id="demo-agent",
+    )
+    print(result["context"])
 ```
 
-## The integration pattern
+`wait_for_event` matters: an accepted HTTP write means the event was queued, not that extraction has completed.
 
-Every agent framework follows the same three calls. Keep the API key on the
-server or local agent process, never in a browser or mobile bundle.
-
-```text
-user message
-     │
-     ├─ memories.search(query, user_id, agent_id) ──► context for the model
-     │                                                   │
-     └─ model / tools / agent graph ◄────────────────────┘
-             │
-             └─ memories.add(turn, run_id) ──► durable background extraction
-```
-
-Use a stable `user_id` for the person or tenant, a stable `agent_id` for each
-agent that should have an isolated memory namespace, and a `run_id` for one
-conversation or job. Omit `agent_id` only when all agents should share the
-same user profile.
-
-## Agent framework recipes
-
-The `integrations/` directory contains copy-and-adapt recipes. They are
-deliberately provider-neutral: use OpenAI, Anthropic, Gemini, Groq, Sarvam,
-Ollama, or a self-hosted model without changing the memory layer.
-
-| Runtime | What is included | Recommended use |
-|---|---|---|
-| LangChain | `langchain.py` and a small history adapter | Add memory before the model call and save after it |
-| LangGraph | `langgraph.py` nodes | Put recall and remember nodes around your graph |
-| Deep Agents | `deep-agents.md` | Add memory as a bounded context tool and checkpoint |
-| Hermes | `hermes.md` | Register `syntarus_search` and `syntarus_remember` tools |
-| OpenClaw | `openclaw.md` + MCP snippet | Expose search/remember through the MCP tool boundary |
-| NemoClaw | `nemoclaw.md` | Use the same HTTP contract from a sandboxed tool |
-| Coding agents | `coding-agent.md` | Recall project decisions before planning and save verified fixes |
-| Any agent | `generic.py` | Two functions: `recall()` and `remember()` |
-
-LangChain and LangGraph examples are runnable when their optional packages
-are installed. The Deep Agents, Hermes, OpenClaw, and NemoClaw recipes use
-their documented tool/MCP boundaries rather than pretending there is one
-universal Python API. That keeps the examples honest as those projects evolve.
-
-## Local data and reset
-
-Continuum uses volume names prefixed with `continuum_ce_`; it will not
-reuse or delete the volumes from the main development or production compose
-files.
+## CLI
 
 ```bash
-docker compose down                  # stop containers, keep data
-docker compose down -v               # delete Community Edition data
-docker compose logs -f backend       # inspect ingestion and API errors
+python -m pip install -e ./sdk
+
+continuum init
+continuum doctor
+echo "The deploy window is Tuesday morning." | continuum memory add --wait
+continuum memory search "deploy window"
 ```
 
-The default stack does not publish Qdrant, Neo4j, Redis, or Postgres ports at
-all; services communicate on a private Compose network. Use
-`docker-compose.debug.yml` only for loopback debugging. For a real deployment,
-use the public override, private networking, strong database passwords,
-`MEMORYOS_ALLOW_OPEN=false`, and a scoped project key.
+Useful commands:
 
-## What is included — and what is not
+```bash
+# Use a separate namespace for one command.
+continuum memory search "deploy window" --user project_42 --agent release-bot
+
+# Stable output for agents and CI.
+continuum --json memory search "deploy window"
+
+# Inspect or update non-secret endpoint settings.
+continuum config show
+continuum config set-endpoint https://ai.syntarus.com/syntarus-api
+```
+
+The CLI stores only endpoint and namespace configuration. It never writes an API key to disk.
+
+## Architecture
+
+```text
+Agent / CLI / MCP client
+        │
+        ▼
+Syntarus Python SDK ──► FastAPI memory boundary
+        │                        │
+        │                        ├── Qdrant  ─ semantic recall
+        │                        ├── Neo4j   ─ entities and relationships
+        │                        ├── Redis   ─ working state
+        │                        └── Postgres ─ operational state
+        ▼
+Durable ingestion events
+```
+
+Applications interact only with the SDK/API. They do not need to know how the backing stores are wired or deployed.
+
+## Agent integrations
+
+The [`integrations/`](integrations/README.md) directory contains copy-and-adapt recipes:
+
+| Runtime | Recipe | Recommended use |
+| --- | --- | --- |
+| LangChain | `langchain.py` | Recall before the model call, save the finished turn |
+| LangGraph | `langgraph.py` | Add recall and remember nodes around a graph |
+| Deep Agents | `deep-agents.md` | Bounded context tool and checkpoint pattern |
+| Hermes | `hermes.md` | Register search and remember tools |
+| OpenClaw | `openclaw.md` | Expose memory through MCP |
+| NemoClaw | `nemoclaw.md` | Use the HTTP contract from a sandboxed tool |
+| Coding agents | `coding-agent.md` | Recall project decisions and persist verified fixes |
+| Any runtime | `generic.py` | Two provider-neutral helpers: `recall()` and `remember()` |
+
+## Local security model
+
+- The default stack binds the API and console to loopback and keeps database ports private.
+- `sk_mem_community` is a local development key only.
+- `MEMORYOS_ALLOW_OPEN=true` is safe only for loopback development.
+- Never use the default Compose file directly on a public host.
+- The CLI never stores API keys on disk.
+
+For a loopback database inspection:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+```
+
+For an advanced, customer-controlled public deployment:
+
+```bash
+cp .env.example .env
+# Set strong MEMORYOS_API_KEYS, MEMORYOS_SSE_SECRET, SESSION_SECRET,
+# NEO4J_PASSWORD, POSTGRES_PASSWORD, DNS name, and TLS settings.
+docker compose -f docker-compose.yml -f docker-compose.public.yml --profile public up -d --pull missing
+```
+
+The public override disables open development auth and terminates HTTPS through Caddy. Hosted Syntarus remains the recommended production path.
+
+## Data reset
+
+Community Edition volumes use the `continuum_ce_` prefix and do not share data with unrelated Compose stacks.
+
+```bash
+docker compose down      # stop, keep data
+docker compose down -v   # stop and delete Community Edition data
+docker compose logs -f backend
+```
+
+## Repository map
+
+```text
+console/              Local API/console harness
+examples/python/      Python quickstart
+integrations/         Framework recipes and MCP configuration
+scripts/              Start, stop, install, and doctor helpers
+sdk/                  Official Python SDK and CLI
+sdk/mcp/              MCP server
+docker-compose*.yml   Local, debug, source, and public deployment variants
+assets/               Banner and workflow media
+```
+
+## Validate your checkout
+
+```bash
+docker compose config --quiet
+docker compose -f docker-compose.yml -f docker-compose.debug.yml config --quiet
+
+python -m pip install -e ./sdk[test]
+python -m pytest sdk/tests -q
+```
+
+CI runs the same Compose validation and SDK tests on every push and pull request.
+
+## Scope and limitations
 
 Included:
 
-- the same FastAPI memory API and official Python SDK boundary;
-- asynchronous ingestion events, idempotent writes, search, export, and
-  deletion;
-- vector, sparse, entity, and graph-backed retrieval from the local stores;
-- a local console and health/doctor workflow for the first memory loop;
-- versioned Community Edition Docker image release workflow;
-- examples for common agent runtimes and an MCP configuration pattern;
-- isolated local volumes and a reset command for development.
+- FastAPI memory boundary and Python SDK/CLI
+- Asynchronous ingestion events
+- Search, export, deletion, and event inspection
+- Vector, sparse, entity, and graph-backed retrieval
+- Local console, doctor workflow, Docker deployment, and CI
 
-## Roadmap
+Not included:
 
-The current Community Edition focuses on making the core memory loop easy to
-run and inspect. First-class procedural memory is planned for a later release;
-it is intentionally not part of this baseline so the local distribution stays
-small, predictable, and easy to validate.
+- Hosted billing, SSO, multi-region failover, or vendor SLAs
+- A claim that local benchmark results transfer unchanged to every model, dataset, prompt, or deployment
+- A universal agent framework; use the provided integration recipes instead
 
-Continuum is not the hosted Syntarus control plane. Hosted-only
-features such as managed upgrades, multi-region failover, hosted billing,
-enterprise SSO, and a vendor-operated SLA are not implied by this repository.
-The benchmark numbers in this repository are reproducibility material, not a
-guarantee for every model, dataset, hardware setup, or prompt.
+Procedural memory is planned for a later release. It is intentionally absent from this baseline so the distribution stays small and easy to validate.
 
-## Useful links
+## Links
 
-- [Python SDK](sdk/README.md)
+- [Python SDK guide](sdk/README.md)
+- [MCP guide](sdk/mcp/README.md)
+- [Integration recipes](integrations/README.md)
+- [Developer portal](https://www.syntarus.com/pages/developers)
 - [API reference](https://www.syntarus.com/pages/api-reference)
-- [Developer console](https://www.syntarus.com/pages/developers)
 - [Security and reliability](https://www.syntarus.com/pages/security)
 - [Try hosted Syntarus](https://www.syntarus.com/pages/developers)
 - [Apply for the 14-day design-partner pilot](https://www.syntarus.com/pages/enterprise)
-- [Community Edition release checklist](RELEASING.md)
-- [Project license](sdk/LICENSE)
+- [Release checklist](RELEASING.md)
+- [License](LICENSE)
+
+## Contributing
+
+Open an issue first for significant changes. For small fixes, open a pull request from a feature branch with:
+
+1. A clear problem statement
+2. Updated documentation when behavior changes
+3. Passing `docker compose config` checks
+4. Passing `python -m pytest sdk/tests -q`
+
+## License
+
+MIT. See [LICENSE](LICENSE) and [sdk/LICENSE](sdk/LICENSE).
